@@ -1,6 +1,6 @@
 #' Extract Index Data
 #'
-#' This function extracts data from the index file for a specific year and form type.
+#' This function extracts data from the index file for a specific year and form type. # nolint: line_length_linter.
 #'
 #' @param year The year of the data.
 #' @param form_type The form type to filter on.
@@ -18,9 +18,30 @@ extract_index_data <- function(year, form_type, nrows = NULL) {
 
   # Only pass nrows if it is not NULL
   if (!is.null(nrows)) {
-    index_df <- read.csv(index_csv_path, nrows = nrows)
+    index_df <- read.csv(index_csv_path, 
+                     nrows = nrows, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   } else {
-    index_df <- read.csv(index_csv_path)
+    index_df <- read.csv(index_csv_path, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   }
 
   index_df <- index_df[index_df$RETURN_TYPE == form_type, ]
@@ -30,7 +51,7 @@ extract_index_data <- function(year, form_type, nrows = NULL) {
   all_extracted_data <- list()
 
   if (year < 2024) {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
       xml_folder_path <- xml_files_path_prefix
       xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
@@ -48,10 +69,18 @@ extract_index_data <- function(year, form_type, nrows = NULL) {
       })
     }
   } else {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
+
+      print(row)
+
+      object_id <- trimws(row$OBJECT_ID)
+      print(paste("Correct OBJECT_ID from index:", object_id))
+      
+      # Reconstruct the file path
       xml_folder_path <- paste0(xml_files_path_prefix, row$XML_BATCH_ID, "/")
-      xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
+      xml_file <- paste0(xml_folder_path, object_id, "_public.xml")
+      
 
       if (!dir.exists(xml_folder_path)) {
         download_and_extract_zip(xml_files_path_prefix, row$XML_BATCH_ID, year)
@@ -60,9 +89,13 @@ extract_index_data <- function(year, form_type, nrows = NULL) {
       tryCatch({
         extracted_data <- extract_variables_and_attr_from_xml(xml_file, all_variables)
         combined_data <- c(as.list(row), extracted_data)
+        print("combined_data processed")
         all_extracted_data <- append(all_extracted_data, list(combined_data))
+        print("all_extracted_data processed")
       }, error = function(e) {
-        message("Error processing file: ", xml_file)
+        message("Error occurred during data extraction:")
+        message("File: ", xml_file)
+        message("Error message: ", e$message)
       })
     }
   }
@@ -104,7 +137,7 @@ extract_schedule_c_data <- function(year, nrows = NULL) {
   valid_schedule_c_data <- list()
 
   if (year < 2024) {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
       xml_folder_path <- xml_files_path_prefix
       xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
@@ -127,7 +160,7 @@ extract_schedule_c_data <- function(year, nrows = NULL) {
       })
     }
   } else {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
       xml_folder_path <- paste0(xml_files_path_prefix, row$XML_BATCH_ID, "/")
       xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
@@ -189,7 +222,7 @@ extract_recipient_data <- function(year, nrows = NULL) {
   xml_files_path_prefix <- paste0("data/xml_files/", year, "/")
 
   if (year >= 2024) {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
       xml_folder_path <- paste0(xml_files_path_prefix, row$XML_BATCH_ID, "/")
       xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
@@ -207,7 +240,7 @@ extract_recipient_data <- function(year, nrows = NULL) {
       })
     }
   } else {
-    for (i in 1:nrow(index_df)) {
+    for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
       xml_folder_path <- xml_files_path_prefix
       xml_file <- paste0(xml_folder_path, row$OBJECT_ID, "_public.xml")
