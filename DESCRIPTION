@@ -1,0 +1,17 @@
+Package: ConverterIRS990
+Title: IRS 990 converter
+Version: 0.0.0.1
+Authors@R: 
+    person("Louis", "Xiang Li", , "me@louisxl.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Convert IRS 990 data to CSV and R objects
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.5.0)
+Imports: 
+    XML,
+    httr,
+    utils,
+    dplyr
+RoxygenNote: 7.3.2
