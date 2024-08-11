@@ -125,9 +125,30 @@ extract_schedule_c_data <- function(year, nrows = NULL) {
 
   # Only pass nrows if it is not NULL
   if (!is.null(nrows)) {
-    index_df <- read.csv(index_csv_path, nrows = nrows)
+    index_df <- read.csv(index_csv_path, 
+                     nrows = nrows, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   } else {
-    index_df <- read.csv(index_csv_path)
+    index_df <- read.csv(index_csv_path, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   }
 
   index_df <- index_df[index_df$RETURN_TYPE == "990", ]
@@ -209,9 +230,30 @@ extract_recipient_data <- function(year, nrows = NULL) {
 
   # Only pass nrows if it is not NULL
   if (!is.null(nrows)) {
-    index_df <- read.csv(index_csv_path, nrows = nrows)
+    index_df <- read.csv(index_csv_path, 
+                     nrows = nrows, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   } else {
-    index_df <- read.csv(index_csv_path)
+    index_df <- read.csv(index_csv_path, 
+                     colClasses = c(RETURN_ID = "character",
+                                    FILING_TYPE = "character",
+                                    EIN = "character",
+                                    TAX_PERIOD = "character",
+                                    SUB_DATE = "character",
+                                    TAXPAYER_NAME = "character",
+                                    RETURN_TYPE = "character",
+                                    DLN = "character",
+                                    OBJECT_ID = "character",
+                                    XML_BATCH_ID = "character"))
   }
 
   # Filter the index DataFrame to include only rows with the specified form type
