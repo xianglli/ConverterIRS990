@@ -17,6 +17,6 @@ extract_index_data(year, form_type, nrows = NULL)
 A data frame containing the extracted data.
 }
 \description{
-This function extracts data from the index file for a specific year and form type.
+This function extracts data from the index file for a specific year and form type. # nolint: line_length_linter.
 }
 \keyword{internal}

@@ -20,6 +20,23 @@ read_variables_from_csv <- function(file_path) {
 #' @importFrom XML xmlParse xmlRoot getNodeSet xmlValue xmlAttrs
 #' @keywords internal
 extract_variables_and_attr_from_xml <- function(xml_file, variables) {
+  # Check if the file exists
+  if (!file.exists(xml_file)) {
+    stop("File does not exist: ", xml_file)
+  }
+  
+  # Check if the file is empty
+  if (file.info(xml_file)$size == 0) {
+    stop("File is empty: ", xml_file)
+  }
+  
+  # Try to parse the XML content
+  tryCatch({
+    doc <- xmlParse(xml_file)
+  }, error = function(e) {
+    stop("Failed to parse XML file: ", xml_file, " - Error: ", e$message)
+  })
+
   doc <- xmlParse(xml_file)
   root <- xmlRoot(doc)
   ns <- c(irs = "http://www.irs.gov/efile")
@@ -31,22 +48,63 @@ extract_variables_and_attr_from_xml <- function(xml_file, variables) {
     xpath_parts <- unlist(strsplit(xpath_expr, "/"))
     xpath_expr <- paste0("irs:", xpath_parts, collapse = "/")
 
-    node <- getNodeSet(root, xpath_expr, namespaces = ns)[[1]]
-    if (!is.null(node)) {
-      extracted_data[[var]] <- xmlValue(node)
-      attrs <- xmlAttrs(node)
-      if (!is.null(attrs)) {
-        for (attr_name in names(attrs)) {
-          extracted_data[[paste(var, attr_name, sep = "/")]] <- attrs[[attr_name]]
-        }
-      }
-    } else {
+    nodes <- getNodeSet(root, xpath_expr, namespaces = ns)
+
+    if (length(nodes) == 0) {
       extracted_data[[var]] <- NA
+    } else {
+      node <- nodes[[1]]
+      extracted_data[[var]] <- xmlValue(node)
+      # attrs <- xmlAttrs(node)
+      # if (length(attrs) == 0) {
+      #   print(paste("No attributes found for node:", xpath_expr))
+      # } else {
+      #   for (attr_name in names(attrs)) {
+      #     extracted_data[[paste(var, attr_name, sep = "/")]] <- attrs[[attr_name]]
+      #   }
+      # }
     }
   }
-
   return(extracted_data)
 }
+
+#' Extract Recipient Table from XML
+#'
+#' This function extracts recipient table data from a specific XML file.
+#'
+#' @param xml_file The path to the XML file.
+#' @param object_id The OBJECT_ID from the index file, used as an identifier.
+#' @param recipient_variables A vector of recipient variables to extract.
+#' @return A list containing the extracted recipient data.
+#' @importFrom XML xmlParse xmlRoot getNodeSet xmlValue
+#' @keywords internal
+extract_recipient_table <- function(xml_file, object_id, recipient_variables) {
+  doc <- xmlParse(xml_file)
+  root <- xmlRoot(doc)
+  ns <- c(irs = "http://www.irs.gov/efile")
+  
+  recipient_data <- list()
+  
+  recipient_elements <- getNodeSet(root, "//irs:RecipientTable", namespaces = ns)
+  
+  for (element in recipient_elements) {
+    recipient <- list(OBJECT_ID = object_id)
+    
+    for (var in recipient_variables) {
+      xpath_expr <- gsub("/text\\(\\)", "", var)
+      xpath_parts <- unlist(strsplit(xpath_expr, "/"))
+      xpath_expr <- paste0("irs:", xpath_parts, collapse = "/")
+      
+      value <- xmlValue(getNodeSet(element, xpath_expr, namespaces = ns)[[1]])
+      recipient[[var]] <- value
+    }
+    
+    recipient_data <- append(recipient_data, list(recipient))
+  }
+  
+  return(recipient_data)
+}
+
 
 #' Read Variables from CSV
 #'
