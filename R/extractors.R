@@ -72,10 +72,7 @@ extract_index_data <- function(year, form_type, nrows = NULL) {
     for (i in seq_len(nrow(index_df))) {
       row <- index_df[i, ]
 
-      print(row)
-
       object_id <- trimws(row$OBJECT_ID)
-      print(paste("Correct OBJECT_ID from index:", object_id))
       
       # Reconstruct the file path
       xml_folder_path <- paste0(xml_files_path_prefix, row$XML_BATCH_ID, "/")
@@ -229,31 +226,28 @@ extract_recipient_data <- function(year, nrows = NULL) {
   }
 
   # Only pass nrows if it is not NULL
-  if (!is.null(nrows)) {
-    index_df <- read.csv(index_csv_path, 
-                     nrows = nrows, 
-                     colClasses = c(RETURN_ID = "character",
-                                    FILING_TYPE = "character",
-                                    EIN = "character",
-                                    TAX_PERIOD = "character",
-                                    SUB_DATE = "character",
-                                    TAXPAYER_NAME = "character",
-                                    RETURN_TYPE = "character",
-                                    DLN = "character",
-                                    OBJECT_ID = "character",
-                                    XML_BATCH_ID = "character"))
+  index_df <- if (!is.null(nrows)) {
+    read.csv(index_csv_path, nrows = nrows, colClasses = c(RETURN_ID = "character",
+                                                           FILING_TYPE = "character",
+                                                           EIN = "character",
+                                                           TAX_PERIOD = "character",
+                                                           SUB_DATE = "character",
+                                                           TAXPAYER_NAME = "character",
+                                                           RETURN_TYPE = "character",
+                                                           DLN = "character",
+                                                           OBJECT_ID = "character",
+                                                           XML_BATCH_ID = "character"))
   } else {
-    index_df <- read.csv(index_csv_path, 
-                     colClasses = c(RETURN_ID = "character",
-                                    FILING_TYPE = "character",
-                                    EIN = "character",
-                                    TAX_PERIOD = "character",
-                                    SUB_DATE = "character",
-                                    TAXPAYER_NAME = "character",
-                                    RETURN_TYPE = "character",
-                                    DLN = "character",
-                                    OBJECT_ID = "character",
-                                    XML_BATCH_ID = "character"))
+    read.csv(index_csv_path, colClasses = c(RETURN_ID = "character",
+                                            FILING_TYPE = "character",
+                                            EIN = "character",
+                                            TAX_PERIOD = "character",
+                                            SUB_DATE = "character",
+                                            TAXPAYER_NAME = "character",
+                                            RETURN_TYPE = "character",
+                                            DLN = "character",
+                                            OBJECT_ID = "character",
+                                            XML_BATCH_ID = "character"))
   }
 
   # Filter the index DataFrame to include only rows with the specified form type
@@ -274,12 +268,21 @@ extract_recipient_data <- function(year, nrows = NULL) {
         download_and_extract_zip(xml_files_path_prefix, row$XML_BATCH_ID, year)
       }
 
-      tryCatch({
-        recipient_data <- extract_recipient_table(xml_file, row$OBJECT_ID, recipient_variables)
-        all_recipient_data <- append(all_recipient_data, recipient_data)
-      }, error = function(e) {
-        message("Error processing file: ", xml_file)
-      })
+      if (file.exists(xml_file)) {
+        tryCatch({
+          recipient_data <- extract_recipient_table(xml_file, row$OBJECT_ID, recipient_variables)
+          if (!is.null(recipient_data) && length(recipient_data) > 0) {
+            all_recipient_data <- append(all_recipient_data, recipient_data)
+          } else {
+            message("No recipient data extracted for OBJECT_ID: ", row$OBJECT_ID)
+          }
+        }, error = function(e) {
+          message("Error processing file: ", xml_file)
+          message("Error message: ", e$message)
+        })
+      } else {
+        message("File does not exist: ", xml_file)
+      }
     }
   } else {
     for (i in seq_len(nrow(index_df))) {
@@ -292,20 +295,33 @@ extract_recipient_data <- function(year, nrows = NULL) {
         download_and_extract_zip_legacy(xml_files_path_prefix, year)
       }
 
-      tryCatch({
-        recipient_data <- extract_recipient_table(xml_file, row$OBJECT_ID, recipient_variables)
-        all_recipient_data <- append(all_recipient_data, recipient_data)
-      }, error = function(e) {
-        message("Error processing file: ", xml_file)
-      })
+      if (file.exists(xml_file)) {
+        tryCatch({
+          recipient_data <- extract_recipient_table(xml_file, row$OBJECT_ID, recipient_variables)
+          if (!is.null(recipient_data) && length(recipient_data) > 0) {
+            all_recipient_data <- append(all_recipient_data, recipient_data)
+          } else {
+            message("No recipient data extracted for OBJECT_ID: ", row$OBJECT_ID)
+          }
+        }, error = function(e) {
+          message("Error processing file: ", xml_file)
+          message("Error message: ", e$message)
+        })
+      } else {
+        message("File does not exist: ", xml_file)
+      }
     }
   }
 
-  recipient_df <- do.call(rbind, lapply(all_recipient_data, as.data.frame))
+  if (length(all_recipient_data) > 0) {
+    recipient_df <- do.call(rbind, lapply(all_recipient_data, as.data.frame))
+    
+    # Remove the "irs:" prefix from the column names
+    colnames(recipient_df) <- gsub("irs:", "", colnames(recipient_df))
 
-  # Remove the "irs:" prefix from the column names
-  recipient_df <- as.data.frame(recipient_df)
-  colnames(recipient_df) <- gsub("irs:", "", colnames(recipient_df))
-
-  return(recipient_df)
+    return(recipient_df)
+  } else {
+    message("No recipient data found for the year: ", year)
+    return(NULL)
+  }
 }
