@@ -86,17 +86,31 @@ extract_recipient_table <- function(xml_file, object_id, recipient_variables) {
   recipient_data <- list()
   
   recipient_elements <- getNodeSet(root, "//irs:RecipientTable", namespaces = ns)
+
+  if (length(recipient_elements) == 0) {
+    message("No recipient elements found in file: ", xml_file)
+    return(NULL)
+  }
   
   for (element in recipient_elements) {
     recipient <- list(OBJECT_ID = object_id)
+
+    print(element)
     
     for (var in recipient_variables) {
       xpath_expr <- gsub("/text\\(\\)", "", var)
       xpath_parts <- unlist(strsplit(xpath_expr, "/"))
       xpath_expr <- paste0("irs:", xpath_parts, collapse = "/")
+
+      node_set <- getNodeSet(element, xpath_expr, namespaces = ns)
       
-      value <- xmlValue(getNodeSet(element, xpath_expr, namespaces = ns)[[1]])
-      recipient[[var]] <- value
+      if (length(node_set) > 0) {
+        value <- xmlValue(node_set[[1]])
+        recipient[[var]] <- value
+      } else {
+        recipient[[var]] <- NA  # Or any other default value
+        message("No data found for variable: ", var, " in OBJECT_ID: ", object_id)
+      }
     }
     
     recipient_data <- append(recipient_data, list(recipient))
@@ -104,6 +118,7 @@ extract_recipient_table <- function(xml_file, object_id, recipient_variables) {
   
   return(recipient_data)
 }
+
 
 
 #' Read Variables from CSV
