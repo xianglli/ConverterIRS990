@@ -55,14 +55,18 @@ extract_variables_and_attr_from_xml <- function(xml_file, variables) {
     } else {
       node <- nodes[[1]]
       extracted_data[[var]] <- xmlValue(node)
-      # attrs <- xmlAttrs(node)
-      # if (length(attrs) == 0) {
-      #   print(paste("No attributes found for node:", xpath_expr))
-      # } else {
-      #   for (attr_name in names(attrs)) {
-      #     extracted_data[[paste(var, attr_name, sep = "/")]] <- attrs[[attr_name]]
-      #   }
-      # }
+      # # get the attribute "ReturnData/IRS990/Organization501cInd/organization501cTypeTxt"
+      
+      if(grepl("Organization501cInd", xpath_expr)){
+        attribute_xpath <- paste0(xpath_expr, "/@organization501cTypeTxt")
+        attribute_nodes <- getNodeSet(root, attribute_xpath, namespaces = ns)
+
+        attribute_node <- attribute_nodes[[1]]
+
+        print(attribute_node["organization501cTypeTxt"])
+        extracted_data[[var]] <-attribute_node["organization501cTypeTxt"]
+        
+      }
     }
   }
   return(extracted_data)
